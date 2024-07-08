@@ -27,22 +27,22 @@ struct PVD_reader_writer *PVD_start_read_file(char *inbuffer, uint32_t inbuffer_
     s->buffer_size = inbuffer_len;
     s->errored = 0;
 
-    if (S_BYTES_LEFT < sizeof(s->file_header.m.file)) {
+    if (S_BYTES_LEFT < sizeof(s->file_header)) {
         dbg_printf("\nExpected at least %li bytes free, have %ld!", sizeof(struct PVD_file_header), S_BYTES_LEFT);
         free(s);
         return NULL;
     }
 
-    s->file_header.m.file = *((struct PVD_file_header *)s->ptr);
+    s->file_header = ((struct PVD_file_header *)s->ptr);
 
-    if (s->file_header.m.file.magic_number != PVD_MN_file) {
-        dbg_printf("\nFound bad magic number! %08x", s->file_header.m.file.magic_number);
+    if (s->file_header->magic_number != PVD_MN_file) {
+        dbg_printf("\nFound bad magic number! %08x", s->file_header->magic_number);
         free(s);
         return NULL;
     }
 
-    if (s->file_header.m.file.total_size < inbuffer_len) {
-        dbg_printf("\nHeader says file is %d bytes, but input buffer is only %d!", s->file_header.m.file.total_size, inbuffer_len);
+    if (s->file_header->total_size < inbuffer_len) {
+        dbg_printf("\nHeader says file is %d bytes, but input buffer is only %d!", s->file_header->total_size, inbuffer_len);
         free(s);
         return NULL;
     }
@@ -70,12 +70,12 @@ struct PVD_reader_writer *PVD_start_write_file(char *outbuffer, uint32_t outbuff
     s->buffer_size = outbuffer_len;
     s->ptr = s->buffer;
 
-    struct PVD_file_header *fh = (struct PVD_file_header *)s->ptr;
+    s->file_header = (struct PVD_file_header *)s->ptr;
     s->ptr += sizeof(struct PVD_file_header);
-    fh->magic_number = PVD_MN_file;
-    fh->total_size = 0;
-    fh->offset_to_first_block = 16;
-    fh->version = 0;
+    s->file_header->magic_number = PVD_MN_file;
+    s->file_header->total_size = 16;
+    s->file_header->offset_to_first_block = 16;
+    s->file_header->version = 0;
 
     return s;
 }
@@ -215,6 +215,8 @@ void PVD_write_game_info(struct PVD_reader_writer *s, const char*name, const cha
 
     if (name) memcpy(h->name, name, name_len);
     if (filename) memcpy(h->filename, filename, filename_len);
+
+    s->file_header->total_size += h->section_size;
 }
 
 void PVD_write_arbitrary_message(struct PVD_reader_writer *s, char *inbuf, uint32_t inbuf_len)
@@ -230,6 +232,8 @@ void PVD_write_arbitrary_message(struct PVD_reader_writer *s, char *inbuf, uint3
 
     memcpy(s->ptr, inbuf, inbuf_len);
     s->ptr += inbuf_len;
+
+    s->file_header->total_size += h->section_size;
 }
 
 void PVD_write_register_update(struct PVD_reader_writer *s, uint32_t num_updates, struct PVD_register_update *updates)
@@ -243,6 +247,8 @@ void PVD_write_register_update(struct PVD_reader_writer *s, uint32_t num_updates
     h->num_register_updates = num_updates;
     memcpy(s->ptr, updates, (num_updates * sizeof(struct PVD_register_update)));
     s->ptr += (num_updates * sizeof(struct PVD_register_update));
+
+    s->file_header->total_size += h->section_size;
 }
 
 void PVD_write_VRAM(struct PVD_reader_writer *s, uint32_t offset, uint32_t len, char *inbuffer)
@@ -259,6 +265,8 @@ void PVD_write_VRAM(struct PVD_reader_writer *s, uint32_t offset, uint32_t len, 
 
     memcpy(s->ptr, inbuffer, len);
     s->ptr += len;
+
+    s->file_header->total_size += h->section_size;
 }
 
 void PVD_write_FIFO(struct PVD_reader_writer *s, uint32_t offset, char *inbuffer, uint32_t inbuffer_len)
@@ -274,6 +282,8 @@ void PVD_write_FIFO(struct PVD_reader_writer *s, uint32_t offset, char *inbuffer
     h->flags = 0;
 
     memcpy(s->ptr, inbuffer, inbuffer_len);
+
+    s->file_header->total_size += h->section_size;
 }
 
 void PVD_delete_reader_writer(struct PVD_reader_writer *s)

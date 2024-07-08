@@ -100,7 +100,7 @@ struct PVD_header {
 
 
 struct PVD_reader_writer {
-    struct PVD_header file_header;
+    struct PVD_file_header *file_header;
     uint8_t *buffer;
     uint8_t *ptr;
     uint32_t buffer_size;
