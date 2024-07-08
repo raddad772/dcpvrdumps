@@ -122,10 +122,9 @@ struct PVD_reader_writer *PVD_start_write_file(char *outbuffer, uint32_t outbuff
 
 struct PVD_header PVD_read_section_header(struct PVD_reader_writer *s);
 
-int PVD_read_arbitrary_message(struct PVD_reader_writer *s, struct PVD_header *h, char *outbuffer, uint32_t outbuffer_len);
-struct PVD_register_update PVD_read_register_update(struct PVD_reader_writer *s, struct PVD_header *h);
+// Returns # bytes read
 int PVD_read_FIFO_VRAM_arbitrary_message(struct PVD_reader_writer *s, struct PVD_header *h, char *outbuffer, uint32_t outbuffer_len);
-void PVD_skip_current_section(struct PVD_reader_writer *s, struct PVD_header *section_header);
+struct PVD_register_update PVD_read_single_register_update(struct PVD_reader_writer *s, struct PVD_header *h);
 
 void PVD_write_game_info(struct PVD_reader_writer *s, const char*name, const char*filename, uint64_t frame_number);
 void PVD_write_arbitrary_message(struct PVD_reader_writer *s, char *inbuf, uint32_t inbuf_len);
